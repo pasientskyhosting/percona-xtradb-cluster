@@ -6,7 +6,7 @@ RUN groupadd -r mysql && useradd -r -g mysql mysql
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		apt-transport-https ca-certificates \
-		pwgen wget \
+		pwgen wget runit\
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN wget https://repo.percona.com/apt/percona-release_0.1-4.jessie_all.deb \
@@ -44,12 +44,17 @@ RUN sed -Ei '/log-error/s/^/#/g' -i /etc/mysql/my.cnf
 
 ADD node.cnf /etc/mysql/conf.d/node.cnf
 
-COPY entrypoint.sh /entrypoint.sh
+COPY services/clustercheck /etc/service/clustercheck/run
+COPY services/mysql /etc/service/mysql/run
+COPY startpxc.sh /usr/bin/startpxc.sh
 COPY jq /usr/bin/jq
-COPY clustercheckcron /usr/bin/clustercheckcron
+COPY clustercheck.sh /usr/bin/clustercheck.sh
 
+RUN chmod a+x /etc/service/clustercheck/run
+RUN chmod a+x /etc/service/mysql/run
 RUN chmod a+x /usr/bin/jq
-RUN chmod a+x /usr/bin/clustercheckcron
+RUN chmod a+x /usr/bin/clustercheck.sh
+RUN chmod a+x /usr/bin/startpxc.sh
 
 
 EXPOSE 3306 4567 4568
@@ -58,7 +63,7 @@ LABEL vendor=Percona
 LABEL com.percona.package="Percona XtraDB Cluster"
 LABEL com.percona.version="5.7"
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/runsvdir"]
+CMD ["-P", "/etc/service"]
 
 EXPOSE 3306
-CMD [""]

@@ -1,11 +1,13 @@
-CLUSTER_NAME=${CLUSTER_NAME:-Theistareykjarbunga}
-ETCD_HOST=${ETCD_HOST:-10.20.2.4:2379}
+CLUSTER_NAME=${CLUSTER_NAME:-clustertest}
+ETCD_HOST=${ETCD_HOST:-10.50.41.11:2379}
 NETWORK_NAME=${CLUSTER_NAME}_net
 
-docker network create -d overlay $NETWORK_NAME
+# docker network create -d overlay $NETWORK_NAME
 
   echo "Starting new node..."
-docker run -d -p 3306 --net=$NETWORK_NAME \
+# docker run -d -p 3306 --net=$NETWORK_NAME \
+docker run --rm -t --name pxc \
+	 -p 3306 \
 	 -e MYSQL_ROOT_PASSWORD="str0nkpassword!" \
 	 -e DISCOVERY_SERVICE=$ETCD_HOST \
 	 -e CLUSTER_NAME=${CLUSTER_NAME} \

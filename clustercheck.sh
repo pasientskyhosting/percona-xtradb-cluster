@@ -69,15 +69,15 @@ then
             # read-only mode. The variable AVAILABLE_WHEN_READONLY is set to 0.
             # => return HTTP 503
             # Shell return-code is 1
-	    curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/?recursive=true -XDELETE 2>>$ERR_FILE >>$ERR_FILE
+	    curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/?recursive=true -XDELETE 2>>$ERR_FILE >>$ERR_FILE
         fi
 
     fi
     # Percona XtraDB Cluster node local state is 'Synced' => return HTTP 200
     # Shell return-code is 0
-    curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/ipaddr -XPUT -d value="$ipaddr" -d ttl=30 2>>$ERR_FILE >>$ERR_FILE
-    curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/hostname -XPUT -d value="$hostname" -d ttl=30 2>>$ERR_FILE >>$ERR_FILE
-    curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr -XPUT -d ttl=30 -d dir=true -d prevExist=true 2>>$ERR_FILE >>$ERR_FILE
+    curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/ipaddr -XPUT -d value="$ipaddr" -d ttl=30 2>>$ERR_FILE >>$ERR_FILE
+    curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/hostname -XPUT -d value="$hostname" -d ttl=30 2>>$ERR_FILE >>$ERR_FILE
+    curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr -XPUT -d ttl=30 -d dir=true -d prevExist=true 2>>$ERR_FILE >>$ERR_FILE
 else 
     # Percona XtraDB Cluster node local state is not 'Synced' => return HTTP 503
     # Shell return-code is 1
