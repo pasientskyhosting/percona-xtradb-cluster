@@ -160,10 +160,10 @@ else
 	cluster_join2=$(join , $i1)
 	cluster_join=$(join , $i1 $i2 )
 	echo "Joining cluster $cluster_join"
-	set -e
-
 fi
 
+set +e
+
 #--log-error=${DATADIR}error.log
-exec mysqld --user=mysql --server-id=$(atoi `hostname -i`) --log-bin --wsrep_cluster_name=$CLUSTER_NAME --wsrep_cluster_address="gcomm://$cluster_join" --wsrep_sst_method=xtrabackup-v2 --wsrep_sst_auth="xtrabackup:$XTRABACKUP_PASSWORD" --wsrep_node_address="$ipaddr" $CMDARG 
+exec mysqld --user=mysql --server-id=$(atoi `hostname -i`) --wsrep_cluster_name=$CLUSTER_NAME --wsrep_cluster_address="gcomm://$cluster_join" --wsrep_sst_method=xtrabackup-v2 --wsrep_sst_auth="xtrabackup:$XTRABACKUP_PASSWORD" --wsrep_node_address="$ipaddr" $CMDARG 
 
