@@ -1,6 +1,24 @@
 #!/bin/bash
 set -e
 
+#Returns the integer representation of an IP arg, passed in ascii dotted-decimal notation (x.x.x.x)
+function atoi {
+	IP=$1; IPNUM=0
+	for (( i=0 ; i<4 ; ++i )); do
+	((IPNUM+=${IP%%.*}*$((256**$((3-${i}))))))
+	IP=${IP#*.}
+	done
+	echo $IPNUM 
+} 
+
+#Returns the dotted-decimal ascii form of an IP arg passed in integer format
+function itoa {
+	echo -n $(($(($(($((${1}/256))/256))/256))%256)).
+	echo -n $(($(($((${1}/256))/256))%256)).
+	echo -n $(($((${1}/256))%256)).
+	echo $((${1}%256)) 
+}
+
 # if command starts with an option, prepend mysqld
 if [ "${1:0:1}" = '-' ]; then
 	CMDARG="$@"
@@ -119,10 +137,10 @@ else
 	ipaddr=$(hostname -i | awk ' { print $1 } ')
 	hostname=$(hostname)
 	
-	curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/queue/$CLUSTER_NAME -XPOST -d value=$ipaddr -d ttl=60
+	curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/queue/$CLUSTER_NAME -XPOST -d value=$ipaddr -d ttl=60
 	
 	#get list of IP from queue 
-	i=$(curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/queue/$CLUSTER_NAME | jq -r '.node.nodes[].value')
+	i=$(curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/queue/$CLUSTER_NAME | jq -r '.node.nodes[].value')
 	
 	# this remove my ip from the list
 	i1="${i[@]/$ipaddr}"
@@ -130,13 +148,13 @@ else
 	
 	# Register the current IP in the discovery service
 	
-	# key set to expire in 30 sec. There is a cronjob that should update them regularly
-	curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/ipaddr -XPUT -d value="$ipaddr" -d ttl=30
-	curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/hostname -XPUT -d value="$hostname" -d ttl=30
-	curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr -XPUT -d ttl=30 -d dir=true -d prevExist=true
+	# key set to expire in 30 sec. The clustercheck service will update it as long as service is alive
+	curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/ipaddr -XPUT -d value="$ipaddr" -d ttl=30
+	curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr/hostname -XPUT -d value="$hostname" -d ttl=30
+	curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/$ipaddr -XPUT -d ttl=30 -d dir=true -d prevExist=true
 	
 	#i=`curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/ | jq -r '.node.nodes[].value'`
-	i=$(curl http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/?quorum=true | jq -r '.node.nodes[]?.key' | awk -F'/' '{print $(NF)}')
+	i=$(curl -s http://$DISCOVERY_SERVICE/v2/keys/pxc-cluster/$CLUSTER_NAME/?quorum=true | jq -r '.node.nodes[]?.key' | awk -F'/' '{print $(NF)}')
 	# this remove my ip from the list
 	i2="${i[@]/$ipaddr}"
 	cluster_join2=$(join , $i1)
@@ -147,5 +165,5 @@ else
 fi
 
 #--log-error=${DATADIR}error.log
-exec mysqld --user=mysql --wsrep_cluster_name=$CLUSTER_NAME --wsrep_cluster_address="gcomm://$cluster_join" --wsrep_sst_method=xtrabackup-v2 --wsrep_sst_auth="xtrabackup:$XTRABACKUP_PASSWORD" --wsrep_node_address="$ipaddr" $CMDARG
+exec mysqld --user=mysql --server-id=$(atoi `hostname -i`) --log-bin --wsrep_cluster_name=$CLUSTER_NAME --wsrep_cluster_address="gcomm://$cluster_join" --wsrep_sst_method=xtrabackup-v2 --wsrep_sst_auth="xtrabackup:$XTRABACKUP_PASSWORD" --wsrep_node_address="$ipaddr" $CMDARG 
 
