@@ -1,5 +1,5 @@
 FROM debian:jessie
-MAINTAINER Percona Development <info@percona.com>
+MAINTAINER Joakim Karlsson <jk@patientsky.com>
 
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
